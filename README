@@ -1,0 +1,256 @@
+"rsyncit" notes                                        Revised: 120710
+----------------------------------------------------------------------
+
+1. Overview.
+
+1.1. Purpose of project.
+
+"rsync"  is a  widely-used CLI (Command Level Interface)  backup  tool
+that supports backups both to directories mounted locally and across a
+network using a protocol of the same name.
+
+This  project  provides  a CLI wrapper  for  "rsync"  that  focuses on
+local backups. The wrapper may be  convenient  in  some cases for  the
+following reasons:  it  has  a simpler interface than "rsync", it adds
+sanity checks, and  it  handles  target-directory  paths  consistently
+(this is discussed below).
+
+For more information on "rsync", visit:
+
+      http://en.wikipedia.org/wiki/Rsync
+
+1.2. Some details.
+
+The wrapper consists  of a single  Perl5 script  named  "rsyncit"  (or
+"rsyncit.pl").
+
+"rsyncit" takes two arguments, not counting option switches:  a source
+directory and a target directory.  The script uses "rsync" to  back-up
+the directory and  its subdirectories to a subdirectory of the  target
+directory.
+
+The  target subdirectory  is transformed  into a  mirror of the source
+directory.  As a consequence of this, files already stored in the sub-
+directory will be  deleted  unless  corresponding  files exist in  the
+source directory.
+
+The  target subdirectory has the same  name as  the  source directory,
+minus any higher-level directory components.  For example, the follow-
+ing command transforms the directory tree  "/backup/bar" into a mirror
+of "/foo/bar":
+
+      rsyncit /foo/bar /backup
+
+Note: This is a possibly significant difference between "rsyncit"  and
+"rsync".  "rsync" seems to put files in  different places depending on
+whether or not the source path is absolute or relative. "rsyncit" sets
+the target subdirectory consistently.
+
+1.3. "rsyncit" was created by OldCoder:
+
+      Site:    http://oldcoder.org/
+      Mail:    oldcoder@yahoo.com
+      GitHub:  https://github.com/OldCoder/
+      Repo:    https://github.com/OldCoder/rsyncit.git
+
+The license used for the current version is MIT/X.
+
+----------------------------------------------------------------------
+
+2. Development.
+
+2.1. Source code.
+
+Full source code  for the project is provided in the same directory as
+this README file. The code  consists of a  single  Perl5 script  named
+"rsyncit.pl".
+
+2.2. Requirements.
+
+Requirements are simply  Linux  (or a UNIX  system  that is reasonably
+compatible  with Linux), Perl5 5.10.1 or above, and an  installed copy
+of "rsync".  The standard  Linux program "less" is recommended but not
+required.
+
+2.3. Installation.
+
+No "build" is needed.
+
+To install the package, proceed as follows:
+
+(a) Copy "rsyncit.pl" to wherever you'd like to store  the script.  If
+possible, use one of the directories in PATH.
+
+(b) Remove the  ".pl"  filename extension and set  file permissions to
+octal 755. For example:
+
+      mv rsyncit.pl rsyncit
+      chmod 755     rsyncit
+
+----------------------------------------------------------------------
+
+3. Usage.
+
+Usage: rsyncit         SourceDir TargetDir
+or:    rsyncit OPTIONS SourceDir TargetDir
+
+"rsyncit" uses "rsync" to  back-up the specified source directory  and
+its subdirectories to a target subdirectory inside the  specified tar-
+get directory.
+
+The  target  subdirectory is  transformed into a mirror  of the source
+directory.  As a consequence of this, files already stored in the tar-
+get subdirectory will be  deleted unless  corresponding files exist in
+the source directory.
+
+The  target subdirectory has the same  name as  the  source directory,
+minus any higher-level directory components.  For example, the follow-
+ing command transforms the directory tree  "/backup/bar" into a mirror
+of "/foo/bar":
+
+      rsyncit /foo/bar /backup
+
+----------------------------------------------------------------------
+
+Backing up "/" (or to "/")  is prohibited. "rsyncit" also detects (and
+prohibits) cases where the  source tree is inside the destination tree
+or vice versa.
+
+----------------------------------------------------------------------
+
+By  default, the  target subdirectory must already exist. This rule is
+intended  to reduce  the chances that files  will be  backed up to the
+wrong place. To override the rule and create directories  automatical-
+ly, use the option "-d":
+
+      rsyncit -d /foo/bar /backup
+
+The  word switch  "--mkdir" has the  same effect as  the letter switch
+"-d":
+      rsyncit --mkdir /foo/bar /backup
+
+----------------------------------------------------------------------
+
+By default,  "rsyncit" prints some messages but not a complete list of
+files as they're copied.  For verbose operation, which includes a list
+of this type, use the option "-v":
+
+      rsyncit -v /foo/bar /backup
+
+The word switch  "--verbose" has the same effect as the  letter switch
+"-v":
+      rsyncit --verbose /foo/bar /backup
+
+----------------------------------------------------------------------
+
+Single-letter  "rsyncit" option switches may be combined. For example,
+"-dv" is equivalent to: -d -v.  Additionally,  option switches  may be
+placed at any position in the command line. For example, the following
+two commands are equivalent:
+
+      rsyncit -v /foo/bar /backup
+      rsyncit    /foo/bar /backup -v
+
+----------------------------------------------------------------------
+
+To perform a dry run (i.e., to show what will be done but not actually
+do it), use "-n":
+
+      rsyncit -n /foo/bar /backup
+
+The  "word"  switch "--dry-run" (or "--dryrun") has the same effect as
+the "letter" switch "-n":
+
+      rsyncit --dry-run /foo/bar /backup
+
+Note: "-n" and its aliases don't imply "-v".  To produce a verbose ex-
+planation of what will be done, add the second switch:
+
+      rsyncit -n -v /foo/bar /backup
+or:   rsyncit -nv   /foo/bar /backup
+
+----------------------------------------------------------------------
+
+"rsyncit" supports "rsync"-compatible "--exclude" switches.  For exam-
+ple, the following command does a backup that excludes the contents of
+# directories named "tmp":
+
+      rsyncit --exclude="*/tmp/*" -v /foo/bar /backup
+
+If excluded objects are present in the backup tree  (for example, from
+previous  backup  operation),  "rsyncit"  deletes them.  "rsyncit" and
+"rsync" differ in this respect;  "rsync"  only does this if the switch
+"--delete-excluded" is specified  ("rsyncit" sets the switch in quest-
+ion automatically).
+
+----------------------------------------------------------------------
+
+To  pass  "rsync"-level  option switches to "rsync",  use one  or more
+"rsyncit"-level option switches of the form:
+
+      --rs:"--foo --bar=xyzzy"
+or:   --rsync:"--foo --bar=xyzzy"
+
+where  "--foo --bar=xyzzy"  are  "rsync"-level switches  separated  by
+spaces. The  switches  themselves shouldn't  include  spaces or double
+quotes.
+
+Each  "--rs" (or "--rsync")  switch may  specify one or more  "rsync"-
+level switches. If two or more "--rsync" switches are used, all of the
+specified "rsync"-level switches will be passed.
+
+----------------------------------------------------------------------
+
+If multiple backups are done over time using the same source and  tar-
+get directories, "rsyncit" reuses existing backup files when possible.
+The algorithm used for this purpose is  good enough for most purposes,
+but if files are modified and neither timestamps  nor sizes are chang-
+ed, modifications of this type may not be detected and backed up.  The
+option "-c" may be used to fix this,  but this option will slow things
+down.
+
+The word switch "--checksum" has the  same effect as the letter switch
+"-c":
+      rsyncit --checksum /foo/bar /backup
+
+----------------------------------------------------------------------
+
+The  letter switch "-f" (or the word switch "--flag") tells  "rsyncit"
+to manage a "flag" file related to the current backup:
+
+      rsyncit -f /foo/bar /backup
+
+The "flag" file has the same pathname as the target subdirectory,  but
+the string  ".rsynced" is added.  "rsyncit" deletes the file initially
+and creates it at the end if the backup appears to be successful.
+
+Note: If an object  with the indicated  flag-file name exists and it's
+a symbolic link or  anything but a regular file,  flag-file operations
+are skipped.  The "-n" (or "--dry-run") option  also suppresses  flag-
+file operations.
+
+----------------------------------------------------------------------
+
+If you'd like to save existing files from the target subdirectory that
+are going to be modified or deleted, use  the "letter" switch "-b" (or
+the "word" switch "--backup"):
+
+      rsyncit -b /foo/bar /backup
+
+This option moves  the current  versions of files that are going to be
+modified or  deleted  to a  second  backup-directory tree.  The second
+tree is stored in a  directory named "rsyncbak" that's  located in the
+same directory as the target subdirectory.
+
+For example,  "rsyncit -b /foo/bar /backup"  will transform  "/backup/
+bar"  into  a mirror of  "/foo/bar" while  saving modified  or deleted
+files from "/backup/bar" in "/backup/rsyncbak/bar".
+
+----------------------------------------------------------------------
+
+The  "word"  switch "--go" or "--normal"  (there  is no  corresponding
+"letter" switch) is equivalent to:
+
+      -bfv
+or:   -b -f -v
+or:   --backup --flag --verbose
